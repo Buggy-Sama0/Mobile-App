@@ -1,5 +1,5 @@
 package hk.edu.hkmu.myapplication;
-// change 1
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
