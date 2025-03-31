@@ -5,7 +5,6 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.MenuItem;
 
 import androidx.annotation.NonNull;
@@ -22,13 +21,12 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 
 import hk.edu.hkmu.myapplication.api.BusApiClient;
 import hk.edu.hkmu.myapplication.model.BusRoute;
+import hk.edu.hkmu.myapplication.model.RouteEta;
 import hk.edu.hkmu.myapplication.utils.FavoriteManager;
 import hk.edu.hkmu.myapplication.adapter.RouteAdapter;
 
@@ -142,11 +140,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         // 真實API調用
         busApiClient.getAllRoutes(new BusApiClient.ApiCallback<List<BusRoute>>() {
             @Override
-            public void onSuccess(List<BusRoute> result) {
+            public List<RouteEta> onSuccess(List<BusRoute> result) {
                 // 只顯示部分路線作為示例
                 List<BusRoute> filteredRoutes = filterRoutes(result);
                 routeAdapter.updateData(filteredRoutes);
                 swipeRefreshLayout.setRefreshing(false);
+                return null;
             }
 
             @Override

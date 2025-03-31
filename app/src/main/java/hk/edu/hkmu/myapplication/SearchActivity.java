@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.EditText;
 
 import androidx.annotation.NonNull;
@@ -23,6 +22,7 @@ import java.util.Locale;
 import hk.edu.hkmu.myapplication.adapter.RouteAdapter;
 import hk.edu.hkmu.myapplication.api.BusApiClient;
 import hk.edu.hkmu.myapplication.model.BusRoute;
+import hk.edu.hkmu.myapplication.model.RouteEta;
 import hk.edu.hkmu.myapplication.utils.FavoriteManager;
 
 public class SearchActivity extends AppCompatActivity implements FavoriteManager.FavoriteChangeListener {
@@ -134,10 +134,11 @@ public class SearchActivity extends AppCompatActivity implements FavoriteManager
     private void loadAllRoutes() {
         busApiClient.getAllRoutes(new BusApiClient.ApiCallback<List<BusRoute>>() {
             @Override
-            public void onSuccess(List<BusRoute> result) {
+            public List<RouteEta> onSuccess(List<BusRoute> result) {
                 allRoutes = result;
                 updateRouteFavoriteStatus();
                 routeAdapter.updateData(allRoutes);
+                return null;
             }
 
             @Override

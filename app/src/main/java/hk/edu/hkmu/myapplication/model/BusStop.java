@@ -20,6 +20,7 @@ public class BusStop {
         this.direction = direction;
         this.serviceType = serviceType;
         this.sequence = sequence;
+
     }
 
     public String getStopId() {
@@ -70,4 +71,6 @@ public class BusStop {
     public String getName(boolean isEnglish) {
         return isEnglish ? nameEN : nameTC;
     }
-} 
+
+
+}

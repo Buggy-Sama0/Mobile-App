@@ -24,6 +24,8 @@ import java.util.concurrent.Executors;
 import hk.edu.hkmu.myapplication.model.BusRoute;
 import hk.edu.hkmu.myapplication.model.BusStop;
 import hk.edu.hkmu.myapplication.model.RouteEta;
+import hk.edu.hkmu.myapplication.model.StopEta;
+
 
 /**
  * 巴士API客戶端類
@@ -60,12 +62,12 @@ public class BusApiClient {
     /**
      * 獲取指定路線的預計到達時間
      */
-    public void getRouteEta(String routeId, String direction, String serviceType, final ApiCallback<List<RouteEta>> callback) {
+    public void getRouteEta(String stopId, String routeId, String serviceType, final ApiCallback<List<RouteEta>> callback) {
         executorService.execute(() -> {
             try {
-                String etaUrl = BASE_URL + "eta/" + routeId + "/" + direction + "/" + serviceType;
+                String etaUrl = BASE_URL + "eta/" + stopId + "/" + routeId + "/" + serviceType;
                 String jsonData = fetchData(etaUrl);
-                List<RouteEta> etaList = parseEta(jsonData);
+                List<RouteEta> etaList = parseRouteEta(jsonData, stopId);
                 
                 mainHandler.post(() -> callback.onSuccess(etaList));
             } catch (Exception e) {
@@ -78,6 +80,7 @@ public class BusApiClient {
     /**
      * 獲取指定路線的站點
      */
+
     public void getRouteStops(String routeId, String direction, String serviceType, final ApiCallback<List<BusStop>> callback) {
         executorService.execute(() -> {
             try {
@@ -122,11 +125,14 @@ public class BusApiClient {
             }
         });
     }
+
+
     
     /**
      * 獲取指定站點的預計到達時間
      */
-    public void getStopEta(String routeId, String stopId, final ApiCallback<List<RouteEta>> callback) {
+
+    public void getStopEta(String routeId, String stopId, final ApiCallback<List<StopEta>> callback) {
         executorService.execute(() -> {
             try {
                 // KMB API格式: https://data.etabus.gov.hk/v1/transport/kmb/eta/STOP_ID/ROUTE/SERVICE_TYPE
@@ -135,17 +141,16 @@ public class BusApiClient {
                 String jsonData = fetchData(etaUrl);
                 
                 // 解析返回的JSON數據
-                List<RouteEta> allEtaList = parseEta(jsonData);
+                List<StopEta> allEtaList = parseStopEta(jsonData);
                 
                 // 過濾出指定路線的到站時間
-                List<RouteEta> filteredEtaList = new ArrayList<>();
-                for (RouteEta eta : allEtaList) {
-                    if (eta.getRouteId().equals(routeId)) {
-                        filteredEtaList.add(eta);
-                    }
+
+                List<StopEta> filteredEtaList = new ArrayList<>();
+                for (StopEta eta : allEtaList) {
+                    filteredEtaList.add(eta);
                 }
                 
-                mainHandler.post(() -> callback.onSuccess(filteredEtaList));
+                mainHandler.post(() -> callback.onSuccess(allEtaList));
             } catch (Exception e) {
                 Log.e(TAG, "Error getting stop ETA", e);
                 mainHandler.post(() -> callback.onError(e.getMessage()));
@@ -454,7 +459,7 @@ public class BusApiClient {
     /**
      * 解析ETA數據
      */
-    private List<RouteEta> parseEta(String jsonData) throws JSONException {
+    private List<RouteEta> parseRouteEta(String jsonData, String stopId) throws JSONException {
         List<RouteEta> etaList = new ArrayList<>();
         JSONObject jsonObject = new JSONObject(jsonData);
         
@@ -466,9 +471,8 @@ public class BusApiClient {
                 JSONObject etaObject = dataArray.getJSONObject(i);
                 
                 // 確保所有必需字段都存在
-                if (etaObject.has("route") && etaObject.has("stop")) {
+                if (etaObject.has("route")) {
                     String routeId = etaObject.getString("route");
-                    String stopId = etaObject.getString("stop");
                     String direction = etaObject.optString("dir", "");
                     String serviceType = etaObject.optString("service_type", "");
                     String etaTime = etaObject.optString("eta", "");
@@ -484,6 +488,41 @@ public class BusApiClient {
             Log.e(TAG, "到站時間API沒有返回data字段: " + jsonData);
         }
         
+        return etaList;
+    }
+
+
+
+    private List<StopEta> parseStopEta(String jsonData) throws JSONException {
+        List<StopEta> etaList = new ArrayList<>();
+        JSONObject jsonObject = new JSONObject(jsonData);
+
+        if (jsonObject.has("data") && !jsonObject.isNull("data")) {
+            JSONArray dataArray = jsonObject.getJSONArray("data");
+            Log.d(TAG, "獲取到" + dataArray.length() + "個到站時間數據");
+
+            for (int i = 0; i < dataArray.length(); i++) {
+                JSONObject etaObject = dataArray.getJSONObject(i);
+
+                // 確保所有必需字段都存在
+                if (etaObject.has("route") || etaObject.has("stop")) {
+                    String routeId = etaObject.getString("route");
+                    String direction = etaObject.optString("dir", "");
+                    String serviceType = etaObject.optString("service_type", "");
+                    String etaTime = etaObject.optString("eta", "");
+                    String remarkTC = etaObject.optString("rmk_tc", "");
+                    String remarkEN = etaObject.optString("rmk_en", "");
+                    String destEn= etaObject.getString("dest_en");
+
+                    StopEta eta = new StopEta(routeId, direction, serviceType, etaTime, remarkTC, remarkEN, destEn);
+                    Log.d(TAG, "解析到站時間: 路線=" + routeId + ", 站點=" + ", 時間=" + etaTime + ", 剩餘分鐘=");
+                    etaList.add(eta);
+                }
+            }
+        } else {
+            Log.e(TAG, "到站時間API沒有返回data字段: " + jsonData);
+        }
+
         return etaList;
     }
     
@@ -562,7 +601,7 @@ public class BusApiClient {
      * API回調接口
      */
     public interface ApiCallback<T> {
-        void onSuccess(T result);
+        List<RouteEta> onSuccess(T result);
         void onError(String errorMessage);
     }
     
@@ -654,7 +693,7 @@ public class BusApiClient {
                         String stopDetailJson = fetchData(stopUrl);
                         JSONObject stopDetailObj = new JSONObject(stopDetailJson);
                         
-                        if (stopDetailObj.has("data") && !stopDetailObj.isNull("data")) {
+                        if (stopDetailObj.has("data")) {
                             JSONObject data = stopDetailObj.getJSONObject("data");
                             
                             String nameTC = data.getString("name_tc");

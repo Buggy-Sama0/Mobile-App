@@ -1,11 +1,7 @@
 package hk.edu.hkmu.myapplication;
 
 import android.content.Intent;
-import android.content.res.Configuration;
-import android.content.res.Resources;
 import android.os.Bundle;
-import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -27,6 +23,7 @@ import java.util.Set;
 import hk.edu.hkmu.myapplication.adapter.RouteAdapter;
 import hk.edu.hkmu.myapplication.api.BusApiClient;
 import hk.edu.hkmu.myapplication.model.BusRoute;
+import hk.edu.hkmu.myapplication.model.RouteEta;
 import hk.edu.hkmu.myapplication.utils.FavoriteManager;
 import hk.edu.hkmu.myapplication.utils.FavoriteUtil;
 
@@ -133,9 +130,10 @@ public class FavoritesActivity extends AppCompatActivity implements FavoriteMana
     private void loadAllRoutes() {
         busApiClient.getAllRoutes(new BusApiClient.ApiCallback<List<BusRoute>>() {
             @Override
-            public void onSuccess(List<BusRoute> result) {
+            public List<RouteEta> onSuccess(List<BusRoute> result) {
                 allRoutes = result;
                 loadFavoriteRoutes();
+                return null;
             }
 
             @Override
